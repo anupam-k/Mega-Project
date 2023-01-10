@@ -2,6 +2,7 @@ import User from "../models/user.schema";
 import asyncHandler from "../services/asyncHandler";
 import CustomError from "../utils/customError";
 import mailHelper from "../utils/mailHelper";
+import crypto from "crypto";
 
 export const cookieOptions = {
   expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
@@ -62,7 +63,7 @@ export const login = asyncHandler(async (req, res) => {
     throw new CustomError("Please fill all the fields", 400);
   }
 
-  const user = User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email }).select("+password");
 
   if (!user) {
     throw new CustomError("Invalid credentials", 400);
@@ -148,4 +149,53 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 
     throw new CustomError(err.message || `Email sent failure`, 500);
   }
+});
+
+/***************************************
+ * @RESET_PASSWORD
+ * @route http://localhost:4000/api/auth/password/reset/:resetToken
+ * @description User will be able to reset password based on url
+ * @parameters token from url, password and confirmpassword
+ * @returns User object
+ ***************************************/
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token: resetToken } = req.params;
+  const { password, confirmPassword } = req.body;
+
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // User.findOne({email: email})
+  const user = await User.findOne({
+    forgotPasswordToken: resetPasswordToken,
+    forgotPasswordExpiry: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new CustomError("Password Token is invalid or expired", 400);
+  }
+
+  if (password !== confirmPassword) {
+    throw new CustomError("Password and Confirm Password Doesn't Match", 400);
+  }
+
+  user.password = password;
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordExpiry = undefined;
+
+  await user.save();
+
+  //create token and send as response
+  const token = user.getJwtToken();
+  user.password = undefined;
+
+  // helper method for cookue can be added
+  res.cookie("token", token, cookieOptions);
+  res.status(200).json({
+    success: true,
+    user,
+  });
 });
