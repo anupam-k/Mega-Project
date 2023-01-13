@@ -7,12 +7,11 @@ import asyncHandler from "../services/asyncHandler";
 import CustomError from "../utils/customError";
 import config from "../config/index";
 
-/************************************************************************************************
+/**********************************************************
  * @ADD_PRODUCT
  * @route https://localhost:5000/api/product
- * @description Controller used for creating a new product
- * @description Only admin can create the coupon
- * @description Uses AWS S3 bucket for image upload
+ * @description Controller used for adding a new product
+ * @description Only admin can access all the products
  * @returns Product Object
  **********************************************************/
 
@@ -87,3 +86,56 @@ export const addProduct = asyncHandler(async (req, res) => {
     }
   });
 });
+
+/**********************************************************
+ * @GET_ALL_PRODUCT
+ * @route https://localhost:5000/api/product
+ * @description Controller used for getting all product details
+ * @description User and Admin can get all product details
+ * @returns Product Object
+ **********************************************************/
+
+export const getAllProduct = asyncHandler(async (req, res) => {
+  const products = await Product.find({});
+
+  if (!products) {
+    throw new CustomError("No product was found", 404);
+  }
+  res.status(200).json({
+    success: true,
+    products,
+  });
+});
+
+/**********************************************************
+ * @GET_PRODUCT_BY_ID
+ * @route https://localhost:5000/api/product
+ * @description Controller used for getting single product details
+ * @description User and Admin can get single product details
+ * @returns Product Object
+ **********************************************************/
+
+export const getProductById = asyncHandler(async (req, res) => {
+  const { id: productId } = req.params;
+  const product = await Product.findById({ productId });
+
+  if (!product) {
+    throw new CustomError("No product was found", 404);
+  }
+  res.status(200).json({
+    success: true,
+    product,
+  });
+});
+
+/* 
+--------------------
+Assignment to read
+--------------------
+- model.aggregate([{},{},{}])
+- $group
+- $push
+- $ROOT
+- $lookup
+- $project
+*/

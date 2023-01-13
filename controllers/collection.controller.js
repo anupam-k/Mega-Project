@@ -5,9 +5,9 @@ import CustomError from "../utils/customError";
 /***************************************
  * @CREATE_COLLECTION
  * @route http://localhost:4000/api/collection
- * @description User signup controller for creating a new user
- * @parameters name
- * @returns User Object
+ * @description  Create new Collection
+ * @parameters Collection name
+ * @returns Response with collection name
  ***************************************/
 
 export const createCollection = asyncHandler(async (req, res) => {
